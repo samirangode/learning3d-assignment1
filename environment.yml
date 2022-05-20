@@ -1,5 +1,5 @@
 # name: l3d
-name: l3d2
+name: l3d3
 channels:
   - pyg
   - pytorch
@@ -10,8 +10,9 @@ channels:
   - bottler
   - defaults
 dependencies:
-  - cudatoolkit=10.2
-  # - cudatoolkit=11.0
+  # - cudatoolkit=10.2
+  # - cudatoolkit=11.1
+  - cudatoolkit=11.1
   - python=3.9
   - pip
   - pytorch
