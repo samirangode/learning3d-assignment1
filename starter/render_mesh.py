@@ -9,7 +9,7 @@ import argparse
 import matplotlib.pyplot as plt
 import pytorch3d
 import torch
-
+import pdb
 from starter.utils import get_device, get_mesh_renderer, load_cow_mesh
 
 
@@ -33,16 +33,32 @@ def render_cow(
     faces = faces.unsqueeze(0)  # (N_f, 3) -> (1, N_f, 3)
     textures = torch.ones_like(vertices)  # (1, N_v, 3)
     textures = textures * torch.tensor(color)  # (1, N_v, 3)
+    N_v = vertices.shape[1]
+    textures_new = torch.zeros((1,N_v,3))
+    color1 = torch.tensor([0, 0, 1])
+    color2 = torch.tensor([1, 0, 0])
+    z_min = torch.min(vertices[:,:,2])
+    z_max = torch.max(vertices[:,:,2])
+    for j in range(N_v):
+        z = vertices[0,j,2]
+        alpha = (z - z_min) / (z_max - z_min)
+        color = alpha * color2 + (1 - alpha) * color1
+        textures_new[:,j,:] = color
+    textures = textures_new 
     mesh = pytorch3d.structures.Meshes(
         verts=vertices,
         faces=faces,
         textures=pytorch3d.renderer.TexturesVertex(textures),
     )
     mesh = mesh.to(device)
+    r, t = pytorch3d.renderer.cameras.look_at_view_transform(dist = 3, elev = 0.0, azim = 90, degrees= True)
 
     # Prepare the camera:
+    # cameras = pytorch3d.renderer.FoVPerspectiveCameras(
+    #     R=torch.eye(3).unsqueeze(0), T=torch.tensor([[0, 0, 3]]), fov=60, device=device
+    # )
     cameras = pytorch3d.renderer.FoVPerspectiveCameras(
-        R=torch.eye(3).unsqueeze(0), T=torch.tensor([[0, 0, 3]]), fov=60, device=device
+        R=r, T=t, fov=60, device=device
     )
 
     # Place a point light in front of the cow.
@@ -57,7 +73,7 @@ def render_cow(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cow_path", type=str, default="data/cow.obj")
-    parser.add_argument("--output_path", type=str, default="images/cow_render.jpg")
+    parser.add_argument("--output_path", type=str, default="images/cow_render_colour.jpg")
     parser.add_argument("--image_size", type=int, default=256)
     args = parser.parse_args()
     image = render_cow(cow_path=args.cow_path, image_size=args.image_size)
